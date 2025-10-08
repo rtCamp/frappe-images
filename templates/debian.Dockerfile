@@ -4,12 +4,13 @@
 FROM python:{{ python_image }}
 LABEL org.opencontainers.image.authors="Nikolai R Kristiansen <nikolaik@gmail.com>"
 
-RUN groupadd --gid 1000 pn && useradd --uid 1000 --gid pn --shell /bin/bash --create-home pn
-ENV POETRY_HOME=/usr/local
+RUN groupadd --gid 1000 frappe && useradd --uid 1000 --gid frappe --shell /bin/bash --create-home -d /workspace frappe \
+&& chown -R frappe:frappe /workspace \
+&& mkdir -p /logs && chown frappe:frappe /logs
 
 RUN \
 {% if distro_variant == "slim" %}  apt-get update && apt-get install curl gnupg2 xz-utils -yqq && \
-{% endif %}  apt-get upgrade -yqq && \
+{% endif %} \
   rm -rf /var/lib/apt/lists/*
 RUN NODE_VERSION="v{{ nodejs_canonical }}" \
   ARCH= && dpkgArch="$(dpkg --print-architecture)" \
@@ -30,6 +31,55 @@ RUN NODE_VERSION="v{{ nodejs_canonical }}" \
   && rm "node-$NODE_VERSION-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 RUN corepack enable yarn
+RUN pip install --no-cache-dir -U pip uv frappe-bench
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    # Core Utilities
+  ca-certificates wget git gettext-base \
+  # Database Clients (required for bench commands)
+  mariadb-client postgresql-client \
+  # PDF runtime dependencies (for wkhtmltopdf)
+  libssl3 libpangocairo-1.0-0 xfonts-75dpi xfonts-base fonts-cantarell \
+  # Process Management
+  jq gosu \
+  pkg-config \
+  # For pandas
+  libbz2-dev \
+  # For bench execute
+  libsqlite3-dev \
+  # For other dependencies
+  zlib1g-dev \
+  build-essential \
 
-RUN pip install -U pip pipenv uv && \
-  curl -fsSL --compressed https://install.python-poetry.org | python -
+  #  libreadline-dev \
+  #  llvm \
+  #  libncurses5-dev \
+  #  libncursesw5-dev \
+  #  xz-utils \
+  #  tk-dev \
+  #  liblzma-dev \
+
+  # Other
+  libffi-dev \
+  liblcms2-dev \
+  libldap2-dev \
+  libmariadb-dev \
+  libsasl2-dev \
+  libtiff5-dev \
+  libwebp-dev \
+  redis-tools \
+  rlwrap \
+  #tk8.6-dev \
+  ssh-client \
+  # Check if required ?
+  && rm -rf /var/lib/apt/lists/*
+
+ENV WKHTMLTOPDF_VERSION=0.12.6.1-3
+RUN set -eux; \
+    ARCH=$(dpkg --print-architecture); \
+    downloaded_file=wkhtmltox_${WKHTMLTOPDF_VERSION}.bookworm_${ARCH}.deb; \
+    wget -q https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/${downloaded_file}; \
+    dpkg -i $downloaded_file || apt-get install -y --no-install-recommends -f; \
+    rm $downloaded_file
+
+WORKDIR /workspace
