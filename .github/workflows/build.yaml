@@ -49,8 +49,9 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       # Build
       - name: Build image
@@ -59,12 +60,12 @@ jobs:
           context: .
           file: dockerfiles/${{ matrix.key }}.Dockerfile
           load: true
-          tags: nikolaik/python-nodejs:${{ matrix.key }}
+          tags: rtcamp/frappe-images:${{ matrix.key }}
 
       # Test
       - name: Run smoke tests
         run: |
-          docker run --rm nikolaik/python-nodejs:${{ matrix.key }} sh -c "node --version && npm --version && yarn --version && python --version && pip --version && pipenv --version && poetry --version && uv --version"
+          docker run --rm rtcamp/frappe-images:${{ matrix.key }} sh -c "node --version && npm --version && yarn --version && python --version && pip --version && pipenv --version && poetry --version && uv --version"
 
       # Push image
       - name: Push image
@@ -75,7 +76,7 @@ jobs:
           file: dockerfiles/${{ matrix.key }}.Dockerfile
           platforms: ${{ join(matrix.platforms) }}
           push: true
-          tags: nikolaik/python-nodejs:${{ matrix.key }}
+          tags: rtcamp/frappe-images:${{ matrix.key }}
 
       # Store build context
       - name: Add digest to build context
@@ -92,41 +93,41 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  release:
-    name: Update versions.json and README.md
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # v7
-        with:
-          enable-cache: true
+  # release:
+  #   name: Update versions.json and README.md
+  #   runs-on: ubuntu-latest
+  #   needs: [deploy]
+  #   steps:
+  #     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+  #     - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # v7
+  #       with:
+  #         enable-cache: true
 
-      - name: Download metadata for builds
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          path: builds
-          pattern: build-*
-          merge-multiple: true
+  #     - name: Download metadata for builds
+  #       uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+  #       with:
+  #         path: builds
+  #         pattern: build-*
+  #         merge-multiple: true
 
-      - name: Update versions.json and README.md, then commit and push changes (if any)
-        run: |
-          uv run dpn --verbose release --builds-dir builds/
-          clean_checkout=$(git status --porcelain)
-          if [[ -n "${clean_checkout}" ]]; then
-              git config --global user.name "Nikolai Kristiansen" > /dev/null 2>&1
-              git config --global user.email nikolaik@users.noreply.github.com > /dev/null 2>&1
+  #     - name: Update versions.json and README.md, then commit and push changes (if any)
+  #       run: |
+  #         uv run dpn --verbose release --builds-dir builds/
+  #         clean_checkout=$(git status --porcelain)
+  #         if [[ -n "${clean_checkout}" ]]; then
+  #             git config --global user.name "rtBot" > /dev/null 2>&1
+  #             git config --global user.email  43742164+rtBot@users.noreply.github.com > /dev/null 2>&1
 
-              # Update README.md
-              today=$(date +%Y-%m-%d)
-              sed -i -E "s/Last updated by bot: .*/Last updated by bot: ${today}/" README.md
+  #             # Update README.md
+  #             today=$(date +%Y-%m-%d)
+  #             sed -i -E "s/Last updated by bot: .*/Last updated by bot: ${today}/" README.md
 
-              git add versions.json README.md
-              git commit -m '🗃 Updated python/node versions [skip ci]'
-              git push --quiet origin main
-          else
-              echo "Nothing changed, nothing to archive."
-          fi
+  #             git add versions.json README.md
+  #             git commit -m '🗃 Updated python/node versions [skip ci]'
+  #             git push --quiet origin main
+  #         else
+  #             echo "Nothing changed, nothing to archive."
+  #         fi
 
   test:
     uses: ./.github/workflows/tests.yaml
