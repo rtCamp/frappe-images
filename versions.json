@@ -8,9 +8,7 @@
       "nodejs": "22",
       "nodejs_canonical": "22.20.0",
       "distro": "slim",
-      "platforms": [
-        "linux/amd64",
-      ]
+      "platforms": ["linux/amd64"]
     }
   ]
 }
