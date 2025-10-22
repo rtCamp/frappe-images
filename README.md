@@ -1,7 +1,6 @@
-# 🐳 Python with Node.js
+[WIP]
 
-[![Pulls](https://img.shields.io/docker/pulls/nikolaik/python-nodejs.svg?style=flat-square)](https://hub.docker.com/r/nikolaik/python-nodejs/)
-[![CircleCI](https://img.shields.io/circleci/project/github/nikolaik/docker-python-nodejs.svg?style=flat-square)](https://circleci.com/gh/nikolaik/docker-python-nodejs)
+# 🐳 Frappe Framework images 
 
 Last updated by bot: 2025-10-15
 
