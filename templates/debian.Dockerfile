@@ -2,7 +2,7 @@
 # python: {{ python_canonical }}
 # nodejs: {{ nodejs_canonical }}
 FROM python:{{ python_image }}
-LABEL org.opencontainers.image.authors="Nikolai R Kristiansen <nikolaik@gmail.com>"
+LABEL org.opencontainers.image.authors="rtCamp <sys@rtcamp.com>"
 
 RUN groupadd --gid 1000 frappe && useradd --uid 1000 --gid frappe --shell /bin/bash --create-home -d /workspace frappe \
 && chown -R frappe:frappe /workspace \
